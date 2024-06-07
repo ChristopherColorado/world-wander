@@ -41,17 +41,42 @@ function generateWorld() {
   for (let y = 0; y < MAP_HEIGHT; y++) {
     const row = [];
     for (let x = 0; x < MAP_WIDTH; x++) {
-      const rand = Math.random();
-      let tileType = TILE_TYPES.EMPTY;
-
-      if (rand < 0.1) tileType = TILE_TYPES.TREE;
-      else if (rand < 0.05) tileType = TILE_TYPES.RIVER;
-      else if (rand < 0.02) tileType = TILE_TYPES.BRIDGE;
-      else if (rand < 0.07) tileType = TILE_TYPES.BUILDING;
-
-      row.push(tileType);
+      row.push(TILE_TYPES.EMPTY);
     }
     worldMap.push(row);
+  }
+
+  // Add trees
+  for (let y = 0; y < MAP_HEIGHT; y++) {
+    for (let x = 0; x < MAP_WIDTH; x++) {
+      if (Math.random() < 0.1) {
+        worldMap[y][x] = TILE_TYPES.TREE;
+      }
+    }
+  }
+
+  // Add buildings
+  for (let y = 0; y < MAP_HEIGHT; y++) {
+    for (let x = 0; x < MAP_WIDTH; x++) {
+      if (Math.random() < 0.07) {
+        worldMap[y][x] = TILE_TYPES.BUILDING;
+      }
+    }
+  }
+
+  // Add rivers and bridges
+  for (let y = 0; y < MAP_HEIGHT; y++) {
+    if (Math.random() < 0.1) {
+      const riverX = Math.floor(Math.random() * MAP_WIDTH);
+      const bridgePosition = Math.floor(Math.random() * MAP_HEIGHT);
+      for (let y2 = 0; y2 < MAP_HEIGHT; y2++) {
+        if (y2 === bridgePosition) {
+          worldMap[y2][riverX] = TILE_TYPES.BRIDGE;
+        } else {
+          worldMap[y2][riverX] = TILE_TYPES.RIVER;
+        }
+      }
+    }
   }
 }
 
@@ -88,18 +113,28 @@ function drawPlayer() {
 }
 
 function updatePlayer() {
-  if (keys.ArrowUp) player.y -= player.speed;
-  if (keys.ArrowDown) player.y += player.speed;
-  if (keys.ArrowLeft) player.x -= player.speed;
-  if (keys.ArrowRight) player.x += player.speed;
+  const newPos = { x: player.x, y: player.y };
+  if (keys.ArrowUp) newPos.y -= player.speed;
+  if (keys.ArrowDown) newPos.y += player.speed;
+  if (keys.ArrowLeft) newPos.x -= player.speed;
+  if (keys.ArrowRight) newPos.x += player.speed;
 
   // Boundary collision detection
-  if (player.x < 0) player.x = 0;
-  if (player.y < 0) player.y = 0;
-  if (player.x + player.width > MAP_WIDTH * TILE_SIZE)
-    player.x = MAP_WIDTH * TILE_SIZE - player.width;
-  if (player.y + player.height > MAP_HEIGHT * TILE_SIZE)
-    player.y = MAP_HEIGHT * TILE_SIZE - player.height;
+  if (newPos.x < 0) newPos.x = 0;
+  if (newPos.y < 0) newPos.y = 0;
+  if (newPos.x + player.width > MAP_WIDTH * TILE_SIZE)
+    newPos.x = MAP_WIDTH * TILE_SIZE - player.width;
+  if (newPos.y + player.height > MAP_HEIGHT * TILE_SIZE)
+    newPos.y = MAP_HEIGHT * TILE_SIZE - player.height;
+
+  const tileX = Math.floor(newPos.x / TILE_SIZE);
+  const tileY = Math.floor(newPos.y / TILE_SIZE);
+  const tileType = worldMap[tileY][tileX];
+
+  if (tileType !== TILE_TYPES.RIVER && tileType !== TILE_TYPES.BUILDING) {
+    player.x = newPos.x;
+    player.y = newPos.y;
+  }
 }
 
 function drawWorld() {
